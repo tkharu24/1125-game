@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Plate - 9×9 ナンプレ</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border-light: #cbd5e1;
+      --border-strong: #334155;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-soft: #dbeafe;
+      --primary-same: #bfdbfe;
+      --peer-bg: #f1f5f9;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --success: #16a34a;
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px 12px 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .difficulty-tabs {
+      display: flex;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 8px;
+      gap: 2px;
+    }
+
+    .diff-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .diff-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Status Bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      padding: 9px 14px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      font-size: 0.88rem;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .status-label {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.82rem;
+    }
+
+    .mistakes-dots {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .mistake-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      transition: background 0.2s;
+    }
+
+    .mistake-dot.used {
+      background: var(--danger);
+    }
+
+    .timer-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .icon-btn-sm {
+      border: 1px solid var(--border-light);
+      background: var(--surface);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .icon-btn-sm:hover {
+      background: var(--peer-bg);
+      color: var(--text);
+    }
+
+    /* Board */
+    .board-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: var(--surface);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 2.5px solid var(--border-strong);
+      user-select: none;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      width: 100%;
+      height: 100%;
+    }
+
+    .cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      font-size: clamp(1.15rem, 5vw, 1.55rem);
+      font-weight: 600;
+      background: var(--surface);
+      transition: background-color 0.08s ease;
+    }
+
+    .cell.box-right {
+      border-right: 2px solid var(--border-strong);
+    }
+
+    .cell.box-bottom {
+      border-bottom: 2px solid var(--border-strong);
+    }
+
+    .cell.edge-right {
+      border-right: none;
+    }
+
+    .cell.edge-bottom {
+      border-bottom: none;
+    }
+
+    .cell.peer {
+      background: var(--peer-bg);
+    }
+
+    .cell.same-num {
+      background: var(--primary-same);
+    }
+
+    .cell.selected {
+      background: var(--primary-soft);
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+      z-index: 2;
+    }
+
+    .cell.given {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .cell.user-correct {
+      color: var(--primary);
+    }
+
+    .cell.user-error {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .cell.selected.user-error {
+      background: #fecaca;
+    }
+
+    .cell.shake {
+      animation: shake 0.28s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    /* Notes inside a cell */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      width: 100%;
+      height: 100%;
+      padding: 2px;
+      pointer-events: none;
+    }
+
+    .note-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(0.55rem, 2.2vw, 0.72rem);
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    .note-num.highlight {
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    /* Overlay (Paused / Won / Lost) */
+    .board-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(3px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .board-overlay.hidden {
+      display: none;
+    }
+
+    .overlay-title {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .overlay-title.won {
+      color: var(--success);
+    }
+
+    .overlay-title.lost {
+      color: var(--danger);
+    }
+
+    .overlay-desc {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .overlay-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .btn-primary {
+      border: none;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      border: 1px solid var(--border-light);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: var(--peer-bg);
+    }
+
+    /* Action Toolbar */
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .tool-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 9px 4px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      position: relative;
+    }
+
+    .tool-btn:hover:not(:disabled) {
+      background: var(--peer-bg);
+    }
+
+    .tool-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .tool-btn.active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .tool-icon {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    .badge {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: var(--text);
+    }
+
+    .tool-btn.active .badge {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* Number Pad */
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 6px;
+    }
+
+    .num-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 2px 8px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      transition: background 0.12s, transform 0.08s, opacity 0.15s;
+    }
+
+    .num-btn:hover:not(:disabled) {
+      background: var(--primary-soft);
+      border-color: #93c5fd;
+    }
+
+    .num-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    .num-btn.completed {
+      opacity: 0.32;
+      cursor: default;
+      background: #f1f5f9;
+    }
+
+    .num-main {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+
+    .num-btn.completed .num-main {
+      color: var(--text-muted);
+    }
+
+    .num-rem {
+      margin-top: 3px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    /* Footer */
+    .footer-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .hint-text {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 400px) {
+      .numpad {
+        gap: 4px;
+      }
+      .num-btn {
+        padding: 8px 1px 6px;
+      }
+      .num-main {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="title-group">
+        <h1 class="title">Number Plate</h1>
+        <span class="subtitle">9×9 ナンプレ</span>
+      </div>
+      <div class="difficulty-tabs" role="group" aria-label="難易度選択">
+        <button class="diff-btn" data-diff="easy">初級</button>
+        <button class="diff-btn" data-diff="medium">中級</button>
+        <button class="diff-btn" data-diff="hard">上級</button>
+      </div>
+    </header>
+
+    <section class="status-bar" aria-label="ゲーム情報">
+      <div class="status-item">
+        <span class="status-label">ミス</span>
+        <span id="mistakes-text">0 / 3</span>
+        <span class="mistakes-dots" id="mistakes-dots" aria-hidden="true">
+          <span class="mistake-dot"></span>
+          <span class="mistake-dot"></span>
+          <span class="mistake-dot"></span>
+        </span>
+      </div>
+      <div class="status-item timer-wrap">
+        <span class="status-label">時間</span>
+        <span id="timer-text">00:00</span>
+        <button class="icon-btn-sm" id="pause-btn" type="button">一時停止</button>
+      </div>
+    </section>
+
+    <section class="board-wrapper" aria-label="ナンプレ盤面">
+      <div class="board" id="board" role="grid"></div>
+      <div class="board-overlay hidden" id="overlay">
+        <h2 class="overlay-title" id="overlay-title"></h2>
+        <p class="overlay-desc" id="overlay-desc"></p>
+        <div class="overlay-actions" id="overlay-actions"></div>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="操作ツール">
+      <button class="tool-btn" id="undo-btn" type="button" title="1手戻す (Z)">
+        <span class="tool-icon">↩</span>
+        <span>戻す</span>
+      </button>
+      <button class="tool-btn" id="erase-btn" type="button" title="消す (Delete / Backspace)">
+        <span class="tool-icon">⌫</span>
+        <span>消す</span>
+      </button>
+      <button class="tool-btn" id="note-btn" type="button" title="メモ切替 (M)">
+        <span class="tool-icon">✎</span>
+        <span>メモ</span>
+        <span class="badge" id="note-badge">OFF</span>
+      </button>
+      <button class="tool-btn" id="hint-btn" type="button" title="ヒント (H)">
+        <span class="tool-icon">💡</span>
+        <span>ヒント</span>
+        <span class="badge" id="hint-badge">3</span>
+      </button>
+    </section>
+
+    <section class="numpad" id="numpad" aria-label="数字入力パッド"></section>
+
+    <footer class="footer-controls">
+      <span class="hint-text">操作: クリック / 1〜9 / 矢印 / M(メモ)</span>
+      <button class="icon-btn-sm" id="new-game-btn" type="button">新しい問題</button>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'number_plate_sudoku_save_v1';
+      const MAX_MISTAKES = 3;
+      const MAX_HINTS = 3;
+      const DIFFICULTY_CONFIG = {
+        easy: { label: '初級', holes: 38 },
+        medium: { label: '中級', holes: 48 },
+        hard: { label: '上級', holes: 55 }
+      };
+
+      const boardEl = document.getElementById('board');
+      const numpadEl = document.getElementById('numpad');
+      const mistakesTextEl = document.getElementById('mistakes-text');
+      const mistakesDotsEl = document.getElementById('mistakes-dots');
+      const timerTextEl = document.getElementById('timer-text');
+      const pauseBtn = document.getElementById('pause-btn');
+      const undoBtn = document.getElementById('undo-btn');
+      const eraseBtn = document.getElementById('erase-btn');
+      const noteBtn = document.getElementById('note-btn');
+      const noteBadge = document.getElementById('note-badge');
+      const hintBtn = document.getElementById('hint-btn');
+      const hintBadge = document.getElementById('hint-badge');
+      const newGameBtn = document.getElementById('new-game-btn');
+      const diffBtns = document.querySelectorAll('.diff-btn');
+      const overlayEl = document.getElementById('overlay');
+      const overlayTitleEl = document.getElementById('overlay-title');
+      const overlayDescEl = document.getElementById('overlay-desc');
+      const overlayActionsEl = document.getElementById('overlay-actions');
+
+      let state = null;
+      let timerId = null;
+      let cellEls = [];
+      let numBtns = [];
+
+      // --- Sudoku Generator & Solver ---
+      function shuffle(arr) {
+        const copy = arr.slice();
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      function getCandidatesMask(grid, idx) {
+        const row = Math.floor(idx / 9);
+        const col = idx % 9;
+        const boxRow = Math.floor(row / 3) * 3;
+        const boxCol = Math.floor(col / 3) * 3;
+        let used = 0;
+
+        for (let i = 0; i < 9; i++) {
+          const rVal = grid[row * 9 + i];
+          if (rVal) used |= 1 << (rVal - 1);
+          const cVal = grid[i * 9 + col];
+          if (cVal) used |= 1 << (cVal - 1);
+          const br = boxRow + Math.floor(i / 3);
+          const bc = boxCol + (i % 3);
+          const bVal = grid[br * 9 + bc];
+          if (bVal) used |= 1 << (bVal - 1);
+        }
+        return (~used) & 0x1ff;
+      }
+
+      function countBits(mask) {
+        let count = 0;
+        while (mask) {
+          mask &= mask - 1;
+          count++;
+        }
+        return count;
+      }
+
+      function generateSolvedBoard() {
+        const grid = new Array(81).fill(0);
+
+        function fill(idx) {
+          if (idx === 81) return true;
+          const mask = getCandidatesMask(grid, idx);
+          if (mask === 0) return false;
+          const candidates = [];
+          for (let n = 1; n <= 9; n++) {
+            if (mask & (1 << (n - 1))) candidates.push(n);
+          }
+          const order = shuffle(candidates);
+          for (const n of order) {
+            grid[idx] = n;
+            if (fill(idx + 1)) return true;
+          }
+          grid[idx] = 0;
+          return false;
+        }
+
+        fill(0);
+        return grid;
+      }
+
+      function countSolutions(grid, limit = 2) {
+        let bestIdx = -1;
+        let bestMask = 0;
+        let minChoices = 10;
+
+        for (let i = 0; i < 81; i++) {
+          if (grid[i] !== 0) continue;
+          const mask = getCandidatesMask(grid, i);
+          const cnt = countBits(mask);
+          if (cnt === 0) return 0;
+          if (cnt < minChoices) {
+            minChoices = cnt;
+            bestIdx = i;
+            bestMask = mask;
+            if (cnt === 1) break;
+          }
+        }
+
+        if (bestIdx === -1) return 1;
+
+        let total = 0;
+        for (let n = 1; n <= 9; n++) {
+          if (!(bestMask & (1 << (n - 1)))) continue;
+          grid[bestIdx] = n;
+          total += countSolutions(grid, limit - total);
+          grid[bestIdx] = 0;
+          if (total >= limit) return total;
+        }
+        return total;
+      }
+
+      function createPuzzle(difficulty) {
+        const solution = generateSolvedBoard();
+        const puzzle = solution.slice();
+        const targetHoles = DIFFICULTY_CONFIG[difficulty].holes;
+        const indices = shuffle(Array.from({ length: 81 }, (_, i) => i));
+
+        let removed = 0;
+        for (const idx of indices) {
+          if (removed >= targetHoles) break;
+          const backup = puzzle[idx];
+          puzzle[idx] = 0;
+
+          // 唯一解を維持できるか検証
+          if (countSolutions(puzzle, 2) === 1) {
+            removed++;
+          } else {
+            puzzle[idx] = backup;
+          }
+        }
+
+        return {
+          solution,
+          givens: puzzle.map((v) => v !== 0),
+          board: puzzle
+        };
+      }
+
+      // --- State & Storage ---
+      function createNewState(difficulty) {
+        const { solution, givens, board } = createPuzzle(difficulty);
+        return {
+          difficulty,
+          solution,
+          givens,
+          board,
+          notes: new Array(81).fill(0),
+          mistakes: 0,
+          hintsLeft: MAX_HINTS,
+          elapsedSeconds: 0,
+          status: 'playing', // 'playing' | 'paused' | 'won' | 'lost'
+          selectedIndex: null,
+          noteMode: false,
+          history: [],
+          bestTimes: loadBestTimes()
+        };
+      }
+
+      function loadBestTimes() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed.bestTimes === 'object' && parsed.bestTimes
+            ? parsed.bestTimes
+            : {};
+        } catch {
+          return {};
+        }
+      }
+
+      function saveState() {
+        if (!state) return;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch {
+          // ストレージ容量超過・無効環境では無視
+        }
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (
+            !parsed ||
+            !Array.isArray(parsed.solution) ||
+            parsed.solution.length !== 81 ||
+            !Array.isArray(parsed.board) ||
+            parsed.board.length !== 81 ||
+            !Array.isArray(parsed.givens) ||
+            parsed.givens.length !== 81 ||
+            !Array.isArray(parsed.notes) ||
+            parsed.notes.length !== 81 ||
+            !DIFFICULTY_CONFIG[parsed.difficulty]
+          ) {
+            return null;
+          }
+          return {
+            difficulty: parsed.difficulty,
+            solution: parsed.solution,
+            givens: parsed.givens,
+            board: parsed.board,
+            notes: parsed.notes,
+            mistakes: Number(parsed.mistakes) || 0,
+            hintsLeft: typeof parsed.hintsLeft === 'number' ? parsed.hintsLeft : MAX_HINTS,
+            elapsedSeconds: Number(parsed.elapsedSeconds) || 0,
+            status: ['playing', 'paused', 'won', 'lost'].includes(parsed.status)
+              ? parsed.status
+              : 'playing',
+            selectedIndex: typeof parsed.selectedIndex === 'number' ? parsed.selectedIndex : null,
+            noteMode: Boolean(parsed.noteMode),
+            history: Array.isArray(parsed.history) ? parsed.history.slice(-100) : [],
+            bestTimes: parsed.bestTimes && typeof parsed.bestTimes === 'object' ? parsed.bestTimes : {}
+          };
+        } catch {
+          return null;
+        }
+      }
+
+      // --- Helpers ---
+      function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+
+      function isCellSolved(idx) {
+        return state.board[idx] !== 0 && state.board[idx] === state.solution[idx];
+      }
+
+      function isPeer(idxA, idxB) {
+        if (idxA === idxB) return false;
+        const rA = Math.floor(idxA / 9);
+        const cA = idxA % 9;
+        const rB = Math.floor(idxB / 9);
+        const cB = idxB % 9;
+        if (rA === rB || cA === cB) return true;
+        return (
+          Math.floor(rA / 3) === Math.floor(rB / 3) &&
+          Math.floor(cA / 3) === Math.floor(cB / 3)
+        );
+      }
+
+      function clearPeerNotes(idx, num) {
+        const bit = ~(1 << (num - 1));
+        state.notes[idx] = 0;
+        for (let i = 0; i < 81; i++) {
+          if (isPeer(idx, i)) {
+            state.notes[i] &= bit;
+          }
+        }
+      }
+
+      function checkWin() {
+        for (let i = 0; i < 81; i++) {
+          if (state.board[i] !== state.solution[i]) return false;
+        }
+        return true;
+      }
+
+      function pushHistory() {
+        state.history.push({
+          board: state.board.slice(),
+          notes: state.notes.slice(),
+          selectedIndex: state.selectedIndex
+        });
+        if (state.history.length > 100) {
+          state.history.shift();
+        }
+      }
+
+      function getRemainingCounts() {
+        const counts = new Array(10).fill(9);
+        for (let i = 0; i < 81; i++) {
+          const val = state.board[i];
+          if (val >= 1 && val <= 9 && val === state.solution[i]) {
+            counts[val]--;
+          }
+        }
+        return counts;
+      }
+
+      // --- Game Actions ---
+      function startNewGame(difficulty = state ? state.difficulty : 'easy') {
+        const prevBest = state ? state.bestTimes : loadBestTimes();
+        state = createNewState(difficulty);
+        state.bestTimes = prevBest;
+        saveState();
+        renderAll();
+      }
+
+      function retryCurrentPuzzle() {
+        for (let i = 0; i < 81; i++) {
+          if (!state.givens[i]) {
+            state.board[i] = 0;
+          }
+          state.notes[i] = 0;
+        }
+        state.mistakes = 0;
+        state.hintsLeft = MAX_HINTS;
+        state.elapsedSeconds = 0;
+        state.status = 'playing';
+        state.history = [];
+        saveState();
+        renderAll();
+      }
+
+      function selectCell(idx) {
+        if (state.status !== 'playing') return;
+        state.selectedIndex = idx;
+        saveState();
+        renderBoard();
+      }
+
+      function inputNumber(num) {
+        if (state.status !== 'playing') return;
+        const idx = state.selectedIndex;
+        if (idx === null || state.givens[idx] || isCellSolved(idx)) return;
+
+        if (state.noteMode) {
+          pushHistory();
+          if (state.board[idx] !== 0) {
+            state.board[idx] = 0;
+          }
+          state.notes[idx] ^= 1 << (num - 1);
+          saveState();
+          renderBoard();
+          renderToolbar();
+          return;
+        }
+
+        // 通常入力: 同じ誤入力の重複入力はミスカウントしない
+        if (state.board[idx] === num) return;
+
+        pushHistory();
+        state.board[idx] = num;
+
+        if (num === state.solution[idx]) {
+          clearPeerNotes(idx, num);
+          state.history = [];
+          if (checkWin()) {
+            state.status = 'won';
+            const prevBest = state.bestTimes[state.difficulty];
+            if (typeof prevBest !== 'number' || state.elapsedSeconds < prevBest) {
+              state.bestTimes[state.difficulty] = state.elapsedSeconds;
+            }
+          }
+        } else {
+          state.notes[idx] = 0;
+          state.mistakes++;
+          triggerCellShake(idx);
+          if (state.mistakes >= MAX_MISTAKES) {
+            state.status = 'lost';
+          }
+        }
+
+        saveState();
+        renderAll();
+      }
+
+      function eraseCell() {
+        if (state.status !== 'playing') return;
+        const idx = state.selectedIndex;
+        if (idx === null || state.givens[idx] || isCellSolved(idx)) return;
+        if (state.board[idx] === 0 && state.notes[idx] === 0) return;
+
+        pushHistory();
+        state.board[idx] = 0;
+        state.notes[idx] = 0;
+        saveState();
+        renderAll();
+      }
+
+      function undo() {
+        if (state.status !== 'playing' || state.history.length === 0) return;
+        const prev = state.history.pop();
+        // すでに正解確定されたマスは保護しつつ復元
+        for (let i = 0; i < 81; i++) {
+          if (!state.givens[i] && !isCellSolved(i)) {
+            state.board[i] = prev.board[i];
+            state.notes[i] = prev.notes[i];
+          }
+        }
+        state.selectedIndex = prev.selectedIndex;
+        saveState();
+        renderAll();
+      }
+
+      function toggleNoteMode() {
+        if (state.status !== 'playing') return;
+        state.noteMode = !state.noteMode;
+        saveState();
+        renderToolbar();
+      }
+
+      function useHint() {
+        if (state.status !== 'playing' || state.hintsLeft <= 0) return;
+
+        let targetIdx = state.selectedIndex;
+        if (targetIdx === null || state.givens[targetIdx] || isCellSolved(targetIdx)) {
+          const candidates = [];
+          for (let i = 0; i < 81; i++) {
+            if (!state.givens[i] && !isCellSolved(i)) {
+              candidates.push(i);
+            }
+          }
+          if (candidates.length === 0) return;
+          targetIdx = candidates[Math.floor(Math.random() * candidates.length)];
+        }
+
+        const correctNum = state.solution[targetIdx];
+        state.board[targetIdx] = correctNum;
+        state.selectedIndex = targetIdx;
+        state.hintsLeft--;
+        state.history = [];
+        clearPeerNotes(targetIdx, correctNum);
+
+        if (checkWin()) {
+          state.status = 'won';
+          const prevBest = state.bestTimes[state.difficulty];
+          if (typeof prevBest !== 'number' || state.elapsedSeconds < prevBest) {
+            state.bestTimes[state.difficulty] = state.elapsedSeconds;
+          }
+        }
+
+        saveState();
+        renderAll();
+      }
+
+      function togglePause() {
+        if (state.status === 'playing') {
+          state.status = 'paused';
+        } else if (state.status === 'paused') {
+          state.status = 'playing';
+        } else {
+          return;
+        }
+        saveState();
+        renderAll();
+      }
+
+      function triggerCellShake(idx) {
+        const cell = cellEls[idx];
+        if (!cell) return;
+        cell.classList.remove('shake');
+        void cell.offsetWidth;
+        cell.classList.add('shake');
+      }
+
+      // --- DOM Build & Render ---
+      function buildBoardDOM() {
+        boardEl.innerHTML = '';
+        cellEls = [];
+        for (let i = 0; i < 81; i++) {
+          const row = Math.floor(i / 9);
+          const col = i % 9;
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          if (col === 2 || col === 5) cell.classList.add('box-right');
+          if (row === 2 || row === 5) cell.classList.add('box-bottom');
+          if (col === 8) cell.classList.add('edge-right');
+          if (row === 8) cell.classList.add('edge-bottom');
+          cell.setAttribute('role', 'gridcell');
+          cell.addEventListener('click', () => selectCell(i));
+          boardEl.appendChild(cell);
+          cellEls.push(cell);
+        }
+      }
+
+      function buildNumpadDOM() {
+        numpadEl.innerHTML = '';
+        numBtns = [];
+        for (let n = 1; n <= 9; n++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'num-btn';
+          btn.innerHTML = `<span class="num-main">${n}</span><span class="num-rem">9</span>`;
+          btn.addEventListener('click', () => inputNumber(n));
+          numpadEl.appendChild(btn);
+          numBtns.push(btn);
+        }
+      }
+
+      function renderHeaderAndStatus() {
+        diffBtns.forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.diff === state.difficulty);
+        });
+
+        mistakesTextEl.textContent = `${state.mistakes} / ${MAX_MISTAKES}`;
+        const dots = mistakesDotsEl.querySelectorAll('.mistake-dot');
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('used', idx < state.mistakes);
+        });
+
+        timerTextEl.textContent = formatTime(state.elapsedSeconds);
+        pauseBtn.textContent = state.status === 'paused' ? '再開' : '一時停止';
+        pauseBtn.disabled = state.status === 'won' || state.status === 'lost';
+      }
+
+      function renderBoard() {
+        const selIdx = state.selectedIndex;
+        const selVal = selIdx !== null ? state.board[selIdx] : 0;
+        const selValidVal =
+          selIdx !== null && selVal !== 0 && selVal === state.solution[selIdx] ? selVal : 0;
+
+        for (let i = 0; i < 81; i++) {
+          const cell = cellEls[i];
+          const val = state.board[i];
+          const isGiven = state.givens[i];
+          const isSolved = val !== 0 && val === state.solution[i];
+          const isError = val !== 0 && val !== state.solution[i];
+
+          cell.classList.toggle('selected', i === selIdx);
+          cell.classList.toggle('peer', selIdx !== null && isPeer(selIdx, i));
+          cell.classList.toggle(
+            'same-num',
+            selValidVal !== 0 && i !== selIdx && val === selValidVal && isSolved
+          );
+          cell.classList.toggle('given', isGiven);
+          cell.classList.toggle('user-correct', !isGiven && isSolved);
+          cell.classList.toggle('user-error', !isGiven && isError);
+
+          if (val !== 0) {
+            if (cell.dataset.mode !== 'val' || cell.textContent !== String(val)) {
+              cell.textContent = String(val);
+              cell.dataset.mode = 'val';
+            }
+          } else if (state.notes[i] !== 0) {
+            const noteMask = state.notes[i];
+            const key = `${noteMask}-${selValidVal}`;
+            if (cell.dataset.mode !== 'notes' || cell.dataset.noteKey !== key) {
+              let html = '<div class="notes-grid">';
+              for (let n = 1; n <= 9; n++) {
+                const has = (noteMask & (1 << (n - 1))) !== 0;
+                const hl = has && selValidVal === n ? ' highlight' : '';
+                html += `<span class="note-num${hl}">${has ? n : ''}</span>`;
+              }
+              html += '</div>';
+              cell.innerHTML = html;
+              cell.dataset.mode = 'notes';
+              cell.dataset.noteKey = key;
+            }
+          } else {
+            if (cell.dataset.mode !== 'empty') {
+              cell.textContent = '';
+              cell.dataset.mode = 'empty';
+              delete cell.dataset.noteKey;
+            }
+          }
+        }
+      }
+
+      function renderToolbar() {
+        const isPlaying = state.status === 'playing';
+        undoBtn.disabled = !isPlaying || state.history.length === 0;
+        eraseBtn.disabled = !isPlaying;
+        noteBtn.disabled = !isPlaying;
+        noteBtn.classList.toggle('active', state.noteMode);
+        noteBadge.textContent = state.noteMode ? 'ON' : 'OFF';
+
+        hintBtn.disabled = !isPlaying || state.hintsLeft <= 0;
+        hintBadge.textContent = String(state.hintsLeft);
+      }
+
+      function renderNumpad() {
+        const remaining = getRemainingCounts();
+        const isPlaying = state.status === 'playing';
+        for (let n = 1; n <= 9; n++) {
+          const btn = numBtns[n - 1];
+          const rem = remaining[n];
+          const done = rem <= 0;
+          btn.disabled = !isPlaying || done;
+          btn.classList.toggle('completed', done);
+          btn.querySelector('.num-rem').textContent = done ? '完了' : `残${rem}`;
+        }
+      }
+
+      function renderOverlay() {
+        if (state.status === 'playing') {
+          overlayEl.classList.add('hidden');
+          return;
+        }
+
+        overlayEl.classList.remove('hidden');
+        overlayTitleEl.className = 'overlay-title';
+        overlayActionsEl.innerHTML = '';
+
+        if (state.status === 'paused') {
+          overlayTitleEl.textContent = '一時停止中';
+          overlayDescEl.textContent = '再開ボタンを押すとタイマーが再開します。';
+          const resumeBtn = document.createElement('button');
+          resumeBtn.type = 'button';
+          resumeBtn.className = 'btn-primary';
+          resumeBtn.textContent = 'ゲームを再開';
+          resumeBtn.addEventListener('click', togglePause);
+          overlayActionsEl.appendChild(resumeBtn);
+        } else if (state.status === 'won') {
+          overlayTitleEl.textContent = 'クリア！';
+          overlayTitleEl.classList.add('won');
+          const diffLabel = DIFFICULTY_CONFIG[state.difficulty].label;
+          const best = state.bestTimes[state.difficulty];
+          const bestStr = typeof best === 'number' ? formatTime(best) : formatTime(state.elapsedSeconds);
+          overlayDescEl.textContent =
+            `${diffLabel}を ${formatTime(state.elapsedSeconds)} でクリアしました（ベスト: ${bestStr}）。`;
+          const nextBtn = document.createElement('button');
+          nextBtn.type = 'button';
+          nextBtn.className = 'btn-primary';
+          nextBtn.textContent = '次の問題へ';
+          nextBtn.addEventListener('click', () => startNewGame(state.difficulty));
+          overlayActionsEl.appendChild(nextBtn);
+        } else if (state.status === 'lost') {
+          overlayTitleEl.textContent = 'ゲームオーバー';
+          overlayTitleEl.classList.add('lost');
+          overlayDescEl.textContent = 'ミスが3回に達しました。同じ問題に再挑戦するか、新しい問題を始められます。';
+          const retryBtn = document.createElement('button');
+          retryBtn.type = 'button';
+          retryBtn.className = 'btn-secondary';
+          retryBtn.textContent = '同じ問題をやり直す';
+          retryBtn.addEventListener('click', retryCurrentPuzzle);
+
+          const newBtn = document.createElement('button');
+          newBtn.type = 'button';
+          newBtn.className = 'btn-primary';
+          newBtn.textContent = '新しい問題';
+          newBtn.addEventListener('click', () => startNewGame(state.difficulty));
+
+          overlayActionsEl.appendChild(retryBtn);
+          overlayActionsEl.appendChild(newBtn);
+        }
+      }
+
+      function renderAll() {
+        renderHeaderAndStatus();
+        renderBoard();
+        renderToolbar();
+        renderNumpad();
+        renderOverlay();
+      }
+
+      // --- Events ---
+      diffBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const diff = btn.dataset.diff;
+          if (!DIFFICULTY_CONFIG[diff]) return;
+          if ((state.status === 'playing' || state.status === 'paused') && state.elapsedSeconds > 0) {
+            if (!confirm('現在のゲームを破棄して新しい問題を開始しますか？')) return;
+          }
+          startNewGame(diff);
+        });
+      });
+
+      newGameBtn.addEventListener('click', () => {
+        if (state.status === 'playing' && state.elapsedSeconds > 0 && !checkWin()) {
+          if (!confirm('現在の進行状況をリセットして新しい問題を作成しますか？')) return;
+        }
+        startNewGame(state.difficulty);
+      });
+
+      pauseBtn.addEventListener('click', togglePause);
+      undoBtn.addEventListener('click', undo);
+      eraseBtn.addEventListener('click', eraseCell);
+      noteBtn.addEventListener('click', toggleNoteMode);
+      hintBtn.addEventListener('click', useHint);
+
+      document.addEventListener('keydown', (e) => {
+        if (!state || state.status !== 'playing') return;
+        if (e.metaKey || e.altKey) return;
+
+        if (e.key >= '1' && e.key <= '9') {
+          e.preventDefault();
+          inputNumber(Number(e.key));
+          return;
+        }
+        if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
+          e.preventDefault();
+          eraseCell();
+          return;
+        }
+        if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          toggleNoteMode();
+          return;
+        }
+        if (e.key === 'h' || e.key === 'H') {
+          e.preventDefault();
+          useHint();
+          return;
+        }
+        if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || !e.shiftKey)) {
+          e.preventDefault();
+          undo();
+          return;
+        }
+
+        const arrowOffsets = {
+          ArrowUp: -9,
+          ArrowDown: 9,
+          ArrowLeft: -1,
+          ArrowRight: 1
+        };
+        if (e.key in arrowOffsets) {
+          e.preventDefault();
+          if (state.selectedIndex === null) {
+            selectCell(0);
+            return;
+          }
+          const r = Math.floor(state.selectedIndex / 9);
+          const c = state.selectedIndex % 9;
+          let nr = r;
+          let nc = c;
+          if (e.key === 'ArrowUp') nr = (r + 8) % 9;
+          if (e.key === 'ArrowDown') nr = (r + 1) % 9;
+          if (e.key === 'ArrowLeft') nc = (c + 8) % 9;
+          if (e.key === 'ArrowRight') nc = (c + 1) % 9;
+          selectCell(nr * 9 + nc);
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          saveState();
+        }
+      });
+
+      window.addEventListener('beforeunload', saveState);
+
+      // --- Init ---
+      buildBoardDOM();
+      buildNumpadDOM();
+
+      state = loadState();
+      if (!state) {
+        state = createNewState('easy');
+        saveState();
+      }
+      renderAll();
+
+      timerId = setInterval(() => {
+        if (state && state.status === 'playing' && !document.hidden) {
+          state.elapsedSeconds++;
+          timerTextEl.textContent = formatTime(state.elapsedSeconds);
+          if (state.elapsedSeconds % 5 === 0) {
+            saveState();
+          }
+        }
+      }, 1000);
+    })();
+  </script>
+</body>
+</html>
